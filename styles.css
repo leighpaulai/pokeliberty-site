@@ -273,6 +273,24 @@ h1 em {
   margin-top: 6px;
 }
 
+.free-shipping-banner {
+  background: rgba(201,162,75,0.1);
+  border: 1px solid rgba(201,162,75,0.35);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gold-bright);
+}
+
+.free-shipping-banner.unlocked {
+  background: rgba(111,169,126,0.1);
+  border-color: rgba(111,169,126,0.4);
+  color: var(--green);
+}
+
 .category-group { margin-bottom: 40px; }
 .category-group:last-child { margin-bottom: 0; }
 

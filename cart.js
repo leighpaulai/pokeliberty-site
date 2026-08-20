@@ -8,6 +8,12 @@
 const CART_STORAGE_KEY = 'pokeliberty_cart';
 const DONATION_STORAGE_KEY = 'pokeliberty_cart_donation';
 
+// Kept in sync by hand with netlify/functions/shipping.js's
+// FREE_SHIPPING_THRESHOLD_CENTS — this one drives the "spend $X more"
+// nudge shown to shoppers, the server-side one is what's actually
+// enforced at checkout. If you change the threshold, change both.
+const FREE_SHIPPING_THRESHOLD_CENTS = 10000; // $100.00
+
 function getCart() {
   try {
     return JSON.parse(localStorage.getItem(CART_STORAGE_KEY)) || {};
@@ -96,4 +102,48 @@ function wireQtyStepper(stepper) {
   input.addEventListener('change', clamp);
   input.addEventListener('blur', clamp);
   clamp();
+}
+
+async function fetchProductsData() {
+  const res = await fetch('data/products.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Could not load product data');
+  return res.json();
+}
+
+/** Current cart's merchandise subtotal in cents, using live prices/stock
+ * from products.json rather than anything cached client-side — matches
+ * what the server will actually charge, and self-corrects for stale
+ * quantities (e.g. stock dropped below what's in someone's cart). */
+async function getCartSubtotalCents() {
+  const cart = getCart();
+  const products = await fetchProductsData();
+  let subtotal = 0;
+  for (const [id, qty] of Object.entries(cart)) {
+    const product = products[id];
+    if (product && product.active) {
+      subtotal += product.unit_amount * Math.min(qty, product.stock);
+    }
+  }
+  return subtotal;
+}
+
+/** Fills a container with "Add $X more for free shipping!" (or an
+ * unlocked message once the threshold is hit), based on the current
+ * cart. Used on both the homepage product section and the cart page. */
+async function renderFreeShippingProgress(containerEl) {
+  if (!containerEl) return;
+  try {
+    const subtotal = await getCartSubtotalCents();
+    const remaining = FREE_SHIPPING_THRESHOLD_CENTS - subtotal;
+    if (remaining <= 0) {
+      containerEl.textContent = "🎉 Your order qualifies for free shipping!";
+      containerEl.classList.add('unlocked');
+    } else {
+      containerEl.textContent = `Add $${(remaining / 100).toFixed(2)} more to your cart for FREE shipping!`;
+      containerEl.classList.remove('unlocked');
+    }
+    containerEl.hidden = false;
+  } catch {
+    containerEl.hidden = true;
+  }
 }

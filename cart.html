@@ -31,6 +31,7 @@
     </div>
 
     <div id="cart-loaded" hidden>
+      <p class="free-shipping-banner" id="free-shipping-banner" hidden></p>
       <div class="cart-items" id="cart-items"></div>
 
       <div class="donation-row">
@@ -219,6 +220,19 @@
     const total = subtotal + (donation ? DONATION_CENTS : 0);
     document.getElementById('summary-subtotal').textContent = fmt(subtotal);
     document.getElementById('summary-total').textContent = fmt(total);
+
+    // subtotal is already known from the loop above — reuse it directly
+    // rather than having the banner re-fetch products.json itself.
+    const shippingBanner = document.getElementById('free-shipping-banner');
+    const remaining = FREE_SHIPPING_THRESHOLD_CENTS - subtotal;
+    if (remaining <= 0) {
+      shippingBanner.textContent = '🎉 Your order qualifies for free shipping!';
+      shippingBanner.classList.add('unlocked');
+    } else {
+      shippingBanner.textContent = `Add ${fmt(remaining)} more to your cart for FREE shipping!`;
+      shippingBanner.classList.remove('unlocked');
+    }
+    shippingBanner.hidden = false;
   }
 
   document.addEventListener('DOMContentLoaded', () => {
