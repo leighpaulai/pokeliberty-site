@@ -60,6 +60,25 @@
         </div>
       </div>
 
+      <div class="checkout-signup">
+        <label class="checkout-signup-toggle">
+          <input type="checkbox" id="checkout-signup-toggle">
+          <span>
+            <span class="checkout-signup-title">Create a free Poke Liberty account?</span>
+            <span class="checkout-signup-sub">Get notified about new drops, card shows, and special offers &amp; discounts.</span>
+          </span>
+        </label>
+        <div class="checkout-signup-fields" id="checkout-signup-fields" hidden>
+          <form class="signup-form" id="checkout-signup-form">
+            <input type="text" data-signup-name placeholder="Name">
+            <input type="email" data-signup-email placeholder="Email">
+            <input type="tel" data-signup-phone placeholder="Phone (optional)">
+            <input type="text" class="hp-field" data-signup-honeypot name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <p class="signup-status" data-signup-status hidden></p>
+          </form>
+        </div>
+      </div>
+
       <div class="checkout-actions">
         <button class="btn-primary" id="checkout-btn" type="button">Proceed to secure checkout</button>
         <a class="btn-secondary" href="index.html#shop">Continue shopping</a>
@@ -75,6 +94,7 @@
 </footer>
 
 <script src="cart.js"></script>
+<script src="signup.js"></script>
 <script>
   const fmt = (cents) => `$${(cents / 100).toFixed(2)}`;
   const DONATION_CENTS = 100;
@@ -210,12 +230,42 @@
       renderCart();
     });
 
+    document.getElementById('checkout-signup-toggle').addEventListener('change', (e) => {
+      document.getElementById('checkout-signup-fields').hidden = !e.target.checked;
+    });
+
     document.getElementById('checkout-btn').addEventListener('click', async () => {
       const btn = document.getElementById('checkout-btn');
       const errorEl = document.getElementById('checkout-error');
       errorEl.hidden = true;
+
+      // If they opted into the "create an account" prompt, name + email are
+      // required — but a failure to save the signup should never block the
+      // actual purchase, so it's submitted best-effort and swallowed.
+      const wantsSignup = document.getElementById('checkout-signup-toggle').checked;
+      let signupPayload = null;
+      if (wantsSignup) {
+        const signupForm = document.getElementById('checkout-signup-form');
+        const name = signupForm.querySelector('[data-signup-name]').value.trim();
+        const email = signupForm.querySelector('[data-signup-email]').value.trim();
+        const phone = signupForm.querySelector('[data-signup-phone]').value.trim();
+        const honeypot = signupForm.querySelector('[data-signup-honeypot]').value.trim();
+        if (!name || !email) {
+          errorEl.textContent = 'Please enter your name and email, or uncheck the account signup.';
+          errorEl.hidden = false;
+          return;
+        }
+        signupPayload = { name, email, phone, source: 'checkout', honeypot };
+      }
+
       btn.disabled = true;
       btn.textContent = 'Redirecting to checkout…';
+
+      if (signupPayload) {
+        submitSignup(signupPayload).catch((err) => {
+          console.warn('Checkout signup could not be saved:', err.message);
+        });
+      }
 
       const cart = getCart();
       const items = Object.entries(cart).map(([id, quantity]) => ({ id, quantity }));

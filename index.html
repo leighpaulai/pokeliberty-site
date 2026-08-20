@@ -125,6 +125,23 @@
       </div>
     </div>
   </section>
+
+  <section class="signup-section" id="stay-in-the-loop">
+    <div class="signup-card">
+      <div>
+        <h2>Stay in the loop</h2>
+        <p>Get notified about new product drops, local card shows, and special offers &amp; discounts — no spam, unsubscribe anytime.</p>
+      </div>
+      <form class="signup-form" id="homepage-signup-form">
+        <input type="text" data-signup-name placeholder="Name" required>
+        <input type="email" data-signup-email placeholder="Email" required>
+        <input type="tel" data-signup-phone placeholder="Phone (optional)">
+        <input type="text" class="hp-field" data-signup-honeypot name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn-primary" type="submit">Sign up for updates</button>
+        <p class="signup-status" data-signup-status hidden></p>
+      </form>
+    </div>
+  </section>
 </main>
 
 <footer>
@@ -133,9 +150,11 @@
 </footer>
 
 <script src="cart.js"></script>
+<script src="signup.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
+    wireSignupForm(document.getElementById('homepage-signup-form'), 'homepage');
     document.querySelectorAll('[data-qty-stepper]').forEach(wireQtyStepper);
     document.querySelectorAll('[data-add-to-cart]').forEach(btn => {
       btn.addEventListener('click', () => {

@@ -3,6 +3,7 @@
   "private": true,
   "description": "Poke Liberty static site + Netlify Functions for cart checkout",
   "dependencies": {
-    "stripe": "^17.0.0"
+    "stripe": "^17.0.0",
+    "google-auth-library": "^9.14.0"
   }
 }
