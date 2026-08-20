@@ -104,6 +104,44 @@ function wireQtyStepper(stepper) {
   clamp();
 }
 
+/** Wires client-side search + in-stock/out-of-stock filtering over the
+ * already-rendered product cards (no server round-trip — everything's
+ * already in the DOM). Hides a whole category-group when nothing in it
+ * matches, and shows a "no results" message when nothing matches at all. */
+function wireProductSearch(searchInput, stockFilter, shopSection) {
+  if (!searchInput || !shopSection) return;
+  const noResultsEl = document.getElementById('no-results-message');
+
+  function applyFilter() {
+    const query = searchInput.value.trim().toLowerCase();
+    const stockValue = stockFilter ? stockFilter.value : 'all';
+    let totalVisible = 0;
+
+    shopSection.querySelectorAll('.category-group').forEach((group) => {
+      let groupVisible = 0;
+      group.querySelectorAll('.product-card').forEach((card) => {
+        const name = card.dataset.searchName || '';
+        const inStock = card.dataset.inStock === 'true';
+        const matchesQuery = !query || name.includes(query);
+        const matchesStock =
+          stockValue === 'all' ||
+          (stockValue === 'in' && inStock) ||
+          (stockValue === 'out' && !inStock);
+        const visible = matchesQuery && matchesStock;
+        card.hidden = !visible;
+        if (visible) groupVisible++;
+      });
+      group.hidden = groupVisible === 0;
+      totalVisible += groupVisible;
+    });
+
+    if (noResultsEl) noResultsEl.hidden = totalVisible > 0;
+  }
+
+  searchInput.addEventListener('input', applyFilter);
+  if (stockFilter) stockFilter.addEventListener('change', applyFilter);
+}
+
 async function fetchProductsData() {
   const res = await fetch('data/products.json', { cache: 'no-store' });
   if (!res.ok) throw new Error('Could not load product data');

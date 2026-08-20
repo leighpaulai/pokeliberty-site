@@ -55,7 +55,7 @@ END_MARKER = "<!-- END PRODUCTS -->"
 
 # Categories render in this order; anything else found in the sheet is
 # appended alphabetically after these.
-CATEGORY_ORDER = ["Sealed Product", "Singles for Collection", "Raw Cards for Grading"]
+CATEGORY_ORDER = ["Sealed Product", "Singles for Collection", "Singles"]
 # Case-insensitive lookup so a typo'd casing in the sheet (e.g. "raw cards
 # for grading") still joins the right section instead of splintering off
 # into its own group — maps lowercased name -> canonical display name.
@@ -182,7 +182,10 @@ def render_product_card(product):
         tag = "Sold Out"
         buy_row = '          <button class="btn-primary" type="button" disabled aria-disabled="true">Sold out</button>'
 
-    return f"""      <div class="product-card" data-product-id="{pid}">
+    in_stock = "true" if stock > 0 else "false"
+    search_name = html.escape(product["name"].strip().lower())
+
+    return f"""      <div class="product-card" data-product-id="{pid}" data-in-stock="{in_stock}" data-search-name="{search_name}">
         <div class="product-image">{img_html}</div>
         <div class="product-info">
           <span class="tag">{tag}</span>

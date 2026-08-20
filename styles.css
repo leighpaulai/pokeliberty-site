@@ -273,6 +273,45 @@ h1 em {
   margin-top: 6px;
 }
 
+.product-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.product-search-bar input[type="search"] {
+  flex: 1 1 240px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,162,75,0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--parchment);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14.5px;
+}
+.product-search-bar input[type="search"]::placeholder { color: var(--slate); }
+.product-search-bar input[type="search"]:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+
+.product-search-bar select {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,162,75,0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--parchment);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+.product-search-bar select:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+
+.no-results-message {
+  color: var(--slate);
+  font-size: 14.5px;
+  text-align: center;
+  padding: 32px 0;
+}
+
 .free-shipping-banner {
   background: rgba(201,162,75,0.1);
   border: 1px solid rgba(201,162,75,0.35);
