@@ -56,6 +56,10 @@ END_MARKER = "<!-- END PRODUCTS -->"
 # Categories render in this order; anything else found in the sheet is
 # appended alphabetically after these.
 CATEGORY_ORDER = ["Sealed Product", "Singles for Collection", "Raw Cards for Grading"]
+# Case-insensitive lookup so a typo'd casing in the sheet (e.g. "raw cards
+# for grading") still joins the right section instead of splintering off
+# into its own group — maps lowercased name -> canonical display name.
+CATEGORY_LOOKUP = {c.lower(): c for c in CATEGORY_ORDER}
 VALID_SHIPPING_TIERS = {"small", "medium", "large"}
 
 SCOPES = [
@@ -106,11 +110,16 @@ def parse_product(row):
     if not product_id:
         return None
 
-    price_raw = row.get("price", "0").strip()
+    # Strip a leading currency symbol and thousands separators defensively
+    # ("$180", "1,200.00") — a bare "180" still parses the same either way.
+    price_raw = row.get("price", "0").strip().lstrip("$").replace(",", "")
     try:
         unit_amount = round(float(price_raw) * 100)
     except ValueError:
         unit_amount = 0
+    if unit_amount == 0 and price_raw not in ("0", "0.0", "0.00", ""):
+        print(f"WARNING: product '{product_id}' has an unparseable price "
+              f"'{row.get('price', '')}' — it will show as $0.00", file=sys.stderr)
 
     try:
         stock = int(float(row.get("stock", "0").strip() or 0))
@@ -127,9 +136,12 @@ def parse_product(row):
                   f"defaulting to 'medium'", file=sys.stderr)
         shipping_tier = "medium"
 
+    category_raw = row.get("category", "").strip() or "Uncategorized"
+    category = CATEGORY_LOOKUP.get(category_raw.lower(), category_raw)
+
     return {
         "id": product_id,
-        "category": row.get("category", "").strip() or "Uncategorized",
+        "category": category,
         "name": row.get("name", "").strip(),
         "description": row.get("description", "").strip(),
         "unit_amount": unit_amount,
