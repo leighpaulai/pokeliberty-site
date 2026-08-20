@@ -101,6 +101,18 @@ exports.handler = async (event) => {
       automatic_tax: { enabled: true },
       shipping_address_collection: { allowed_countries: ['US'] },
       shipping_options,
+      // Optional rather than required: only Local Pickup customers need
+      // this, and Checkout has no way to show a field conditionally based
+      // on which shipping option gets picked — making it required would
+      // put unrelated friction in front of everyone shipping instead.
+      custom_fields: [
+        {
+          key: 'pickup_time',
+          label: { type: 'custom', custom: 'Preferred pickup day/time (only if picking up locally)' },
+          type: 'text',
+          optional: true,
+        },
+      ],
       success_url: `${domain}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${domain}/cart.html`,
       metadata: {
