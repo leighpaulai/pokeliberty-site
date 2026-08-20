@@ -36,6 +36,10 @@ exports.handler = async (event) => {
   }
 
   const line_items = [];
+  // Tracks which internal product ids + quantities this session covers, so
+  // the webhook can decrement the right rows in the Sheet after payment —
+  // Stripe's ad-hoc price_data line items don't carry that back on their own.
+  const purchasedItems = [];
 
   for (const item of items) {
     const product = products[item.id];
@@ -65,6 +69,7 @@ exports.handler = async (event) => {
       },
       quantity: requestedQty,
     });
+    purchasedItems.push({ id: item.id, quantity: requestedQty });
   }
 
   if (donation) {
@@ -88,6 +93,11 @@ exports.handler = async (event) => {
       shipping_address_collection: { allowed_countries: ['US'] },
       success_url: `${domain}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${domain}/cart.html`,
+      metadata: {
+        // Consumed by netlify/functions/webhook.js to decrement stock in
+        // the Sheet once payment actually completes.
+        cart_items: JSON.stringify(purchasedItems),
+      },
     });
 
     return { statusCode: 200, body: JSON.stringify({ url: session.url }) };
