@@ -21,10 +21,17 @@ manually:
     python3 scripts/build_products.py
 
 Sheet columns expected (header row): id, category, name, description, price,
-stock, image_filename, active
+stock, image_filename, active, shipping_tier
 (a legacy "payment_link" column may still exist in the sheet from an earlier
 version of this pipeline — it's no longer used now that checkout goes
 through the cart, and can be left or removed either way.)
+
+shipping_tier must be "small", "medium", or "large" (see
+netlify/functions/create-checkout-session.js for the rate table) — rows
+missing it, or with an unrecognized value, default to "medium" and print a
+warning, since silently under-charging shipping on a "large" item is worse
+than a wrong middle guess. Fill this in for every real product before
+going live.
 """
 import html
 import io
@@ -49,6 +56,7 @@ END_MARKER = "<!-- END PRODUCTS -->"
 # Categories render in this order; anything else found in the sheet is
 # appended alphabetically after these.
 CATEGORY_ORDER = ["Sealed Product", "Singles for Collection", "Raw Cards for Grading"]
+VALID_SHIPPING_TIERS = {"small", "medium", "large"}
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets.readonly",
@@ -109,6 +117,16 @@ def parse_product(row):
     except ValueError:
         stock = 0
 
+    shipping_tier = row.get("shipping_tier", "").strip().lower()
+    if shipping_tier not in VALID_SHIPPING_TIERS:
+        if shipping_tier:
+            print(f"WARNING: product '{product_id}' has unrecognized shipping_tier "
+                  f"'{shipping_tier}' — defaulting to 'medium'", file=sys.stderr)
+        else:
+            print(f"WARNING: product '{product_id}' has no shipping_tier set — "
+                  f"defaulting to 'medium'", file=sys.stderr)
+        shipping_tier = "medium"
+
     return {
         "id": product_id,
         "category": row.get("category", "").strip() or "Uncategorized",
@@ -118,6 +136,7 @@ def parse_product(row):
         "stock": max(stock, 0),
         "image_filename": row.get("image_filename", "").strip(),
         "active": row.get("active", "").strip().upper() == "TRUE",
+        "shipping_tier": shipping_tier,
     }
 
 

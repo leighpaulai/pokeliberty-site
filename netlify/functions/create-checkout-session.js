@@ -12,6 +12,7 @@
  */
 const Stripe = require('stripe');
 const products = require('./products-data.json');
+const { buildShippingOptions } = require('./shipping');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const DONATION_AMOUNT_CENTS = 100;
@@ -40,6 +41,11 @@ exports.handler = async (event) => {
   // the webhook can decrement the right rows in the Sheet after payment —
   // Stripe's ad-hoc price_data line items don't carry that back on their own.
   const purchasedItems = [];
+  // Merchandise subtotal (excludes donation) and the shipping tier of each
+  // item — both feed the shipping calculation below. Computed server-side
+  // from our own product data, never trusted from the client.
+  let subtotalCents = 0;
+  const shippingTiers = [];
 
   for (const item of items) {
     const product = products[item.id];
@@ -70,6 +76,8 @@ exports.handler = async (event) => {
       quantity: requestedQty,
     });
     purchasedItems.push({ id: item.id, quantity: requestedQty });
+    subtotalCents += product.unit_amount * requestedQty;
+    shippingTiers.push(product.shipping_tier || 'medium');
   }
 
   if (donation) {
@@ -84,6 +92,7 @@ exports.handler = async (event) => {
   }
 
   const domain = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://pokeliberty.com';
+  const shipping_options = buildShippingOptions(subtotalCents, shippingTiers);
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -91,6 +100,7 @@ exports.handler = async (event) => {
       line_items,
       automatic_tax: { enabled: true },
       shipping_address_collection: { allowed_countries: ['US'] },
+      shipping_options,
       success_url: `${domain}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${domain}/cart.html`,
       metadata: {
