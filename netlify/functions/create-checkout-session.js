@@ -108,7 +108,7 @@ exports.handler = async (event) => {
       custom_fields: [
         {
           key: 'pickup_time',
-          label: { type: 'custom', custom: 'Preferred pickup day/time (only if picking up locally)' },
+          label: { type: 'custom', custom: 'Preferred pickup day/time (if local pickup)' },
           type: 'text',
           optional: true,
         },
