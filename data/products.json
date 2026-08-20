@@ -8,6 +8,17 @@
     "stock": 8,
     "image_filename": "mega-evo-pitch-black-blister.jpg",
     "active": true,
-    "shipping_tier": "medium"
+    "shipping_tier": "small"
+  },
+  "Pikachu Mega Dreams EX": {
+    "id": "Pikachu Mega Dreams EX",
+    "category": "Raw Cards for Grading",
+    "name": "Pikachu Mega Dreams EX",
+    "description": "Pikachu flawless NM card",
+    "unit_amount": 18000,
+    "stock": 1,
+    "image_filename": "Pikachu-Mega-Dreams-EX.jpg",
+    "active": true,
+    "shipping_tier": "small"
   }
 }
