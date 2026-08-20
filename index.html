@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poke Liberty — Coming Soon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0E1420;
+    --ink-deep: #090D16;
+    --gold: #C9A24B;
+    --gold-bright: #E4C878;
+    --parchment: #F3EFE4;
+    --slate: #7C879C;
+    --red: #D6483C;
+    --card-radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--parchment);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  .noise {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    z-index: 1;
+  }
+
+  .bg-glow {
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 900px;
+    background: radial-gradient(circle, rgba(201,162,75,0.10) 0%, rgba(201,162,75,0) 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32px clamp(24px, 6vw, 72px) 0;
+  }
+
+  .wordmark {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wordmark .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 12px var(--gold-bright);
+  }
+
+  .locale {
+    font-size: 13px;
+    color: var(--slate);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  main {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+    gap: 40px;
+    padding: clamp(40px, 8vh, 100px) clamp(24px, 6vw, 72px) clamp(60px, 8vh, 100px);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    border: 1px solid rgba(201,162,75,0.35);
+    padding: 7px 14px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(42px, 5.4vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--gold-bright);
+  }
+
+  .sub {
+    margin-top: 26px;
+    font-size: clamp(16px, 1.6vw, 19px);
+    line-height: 1.6;
+    color: var(--slate);
+    max-width: 46ch;
+  }
+
+  .cta-row {
+    margin-top: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: var(--red);
+    color: var(--parchment);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 16px 28px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 8px 24px rgba(214,72,60,0.28);
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(214,72,60,0.38); }
+  .btn-primary:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+
+  .btn-ghost {
+    color: var(--parchment);
+    font-size: 14.5px;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(243,239,228,0.3);
+    padding-bottom: 2px;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .btn-ghost:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+  .btn-ghost:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+
+  .launch-note {
+    margin-top: 22px;
+    font-size: 13px;
+    color: var(--slate);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---- Shop section ---- */
+  .shop {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 clamp(24px, 6vw, 72px) clamp(50px, 7vh, 90px);
+  }
+
+  .shop-head {
+    border-top: 1px solid rgba(124,135,156,0.25);
+    padding-top: 32px;
+    margin-bottom: 32px;
+  }
+
+  .shop-head h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(26px, 3vw, 34px);
+  }
+
+  .shop-head p {
+    color: var(--slate);
+    font-size: 14.5px;
+    margin-top: 6px;
+  }
+
+  .product-card {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 28px;
+    background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+    border: 1px solid rgba(201,162,75,0.3);
+    border-radius: 18px;
+    padding: 28px;
+    align-items: center;
+  }
+
+  .product-image {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1a2233 0%, #0c1220 60%);
+    border: 1px solid rgba(201,162,75,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--slate);
+    font-size: 13px;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .product-info .tag {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--gold);
+    font-size: 13px;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .product-info h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(22px, 2.4vw, 28px);
+    margin-bottom: 8px;
+  }
+
+  .product-price {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--gold-bright);
+    margin-bottom: 16px;
+  }
+
+  .product-desc {
+    color: var(--slate);
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin-bottom: 22px;
+    max-width: 50ch;
+  }
+
+  .other-pay-note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--slate);
+  }
+
+  .other-pay-note a {
+    color: var(--gold-bright);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media (max-width: 640px) {
+    .product-card { grid-template-columns: 1fr; }
+    .product-image { max-width: 220px; margin: 0 auto; }
+  }
+
+  /* ---- Signature holo card ---- */
+  .card-stage {
+    perspective: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .holo-card {
+    width: min(320px, 80vw);
+    aspect-ratio: 5 / 7;
+    border-radius: var(--card-radius);
+    position: relative;
+    transform: rotateY(-14deg) rotateX(8deg) rotate(-4deg);
+    transform-style: preserve-3d;
+    animation: float 7s ease-in-out infinite;
+    box-shadow:
+      0 30px 60px -15px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(201,162,75,0.25);
+  }
+
+  @keyframes float {
+    0%, 100% { transform: rotateY(-14deg) rotateX(8deg) rotate(-4deg) translateY(0px); }
+    50% { transform: rotateY(-10deg) rotateX(6deg) rotate(-3deg) translateY(-14px); }
+  }
+
+  .holo-face {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--card-radius);
+    background:
+      linear-gradient(135deg, #1a2233 0%, #0c1220 60%);
+    border: 1px solid rgba(201,162,75,0.4);
+    overflow: hidden;
+  }
+
+  .holo-sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(228,200,120,0.55) 42%,
+      rgba(255,255,255,0.75) 48%,
+      rgba(120,190,255,0.45) 54%,
+      transparent 75%
+    );
+    background-size: 250% 250%;
+    mix-blend-mode: soft-light;
+    animation: sheen 5s ease-in-out infinite;
+  }
+
+  @keyframes sheen {
+    0% { background-position: 0% 20%; }
+    50% { background-position: 100% 80%; }
+    100% { background-position: 0% 20%; }
+  }
+
+  .holo-inner {
+    position: absolute;
+    inset: 16px;
+    border: 1px solid rgba(201,162,75,0.5);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 18px;
+  }
+
+  .holo-tag {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--gold-bright);
+    letter-spacing: 0.03em;
+  }
+
+  .holo-mark {
+    align-self: center;
+    width: 72px;
+    height: 72px;
+  }
+
+  .holo-mark-ring {
+    fill: none;
+    stroke: url(#markRing);
+    stroke-width: 2;
+  }
+
+  .holo-mark-bg {
+    fill: url(#markBg);
+  }
+
+  .holo-mark-bolt {
+    fill: url(#markBolt);
+  }
+
+  .holo-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 11px;
+    color: var(--slate);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .holo-foot strong {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--parchment);
+    font-size: 15px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* ---- Highlights ---- */
+  .highlights {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 clamp(24px, 6vw, 72px) clamp(60px, 8vh, 110px);
+  }
+
+  .highlights-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 40px;
+    border-top: 1px solid rgba(124,135,156,0.25);
+    padding-top: 32px;
+  }
+
+  .highlights-head h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(26px, 3vw, 34px);
+  }
+
+  .highlights-head p {
+    color: var(--slate);
+    font-size: 14.5px;
+    max-width: 40ch;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .tile {
+    background: linear-gradient(160deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+    border: 1px solid rgba(201,162,75,0.18);
+    border-radius: 16px;
+    padding: 30px 26px;
+    position: relative;
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+
+  .tile:hover {
+    border-color: rgba(201,162,75,0.5);
+    transform: translateY(-4px);
+  }
+
+  .tile .num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--gold);
+    font-size: 13px;
+    margin-bottom: 18px;
+    display: block;
+  }
+
+  .tile h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 21px;
+    margin-bottom: 10px;
+  }
+
+  .tile p {
+    color: var(--slate);
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  footer {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid rgba(124,135,156,0.25);
+    padding: 32px clamp(24px, 6vw, 72px) 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: var(--slate);
+    font-size: 13px;
+  }
+
+  footer a {
+    color: var(--slate);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  footer a:hover { color: var(--gold-bright); }
+  footer a:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .holo-card, .holo-sheen { animation: none; }
+  }
+
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; }
+    .card-stage { order: -1; margin-bottom: 8px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="wordmark"><span class="dot"></span>POKE LIBERTY</div>
+  <div class="locale">Liberty, MO</div>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Opening Soon</div>
+      <h1>Fresh packs.<br>Real pulls.<br><em>Right in Liberty.</em></h1>
+      <p class="sub">We're bringing the newest Pokémon TCG sealed product, hand-checked singles, and grading-ready pulls to the Kansas City area — starting with the 30th Anniversary Celebration launch this fall.</p>
+      <div class="cta-row">
+        <a class="btn-primary" href="mailto:hello@pokeliberty.com">Get notified at launch</a>
+        <a class="btn-ghost" href="#highlights">See what's coming</a>
+      </div>
+      <p class="launch-note">First drops land locally — see below to grab one now.</p>
+    </div>
+
+    <div class="card-stage">
+      <div class="holo-card">
+        <div class="holo-face">
+          <div class="holo-sheen"></div>
+          <div class="holo-inner">
+            <div class="holo-tag">POKE LIBERTY</div>
+            <svg class="holo-mark" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="markBg" cx="35%" cy="30%" r="75%">
+                  <stop offset="0%" stop-color="#2a3550"/>
+                  <stop offset="100%" stop-color="#111a2c"/>
+                </radialGradient>
+                <linearGradient id="markRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F4DFA0"/>
+                  <stop offset="50%" stop-color="#C9A24B"/>
+                  <stop offset="100%" stop-color="#8a6a24"/>
+                </linearGradient>
+                <linearGradient id="markBolt" x1="20%" y1="0%" x2="80%" y2="100%">
+                  <stop offset="0%" stop-color="#F9EDC6"/>
+                  <stop offset="45%" stop-color="#E4C878"/>
+                  <stop offset="100%" stop-color="#B98A2E"/>
+                </linearGradient>
+              </defs>
+              <circle class="holo-mark-bg" cx="36" cy="36" r="34"/>
+              <circle class="holo-mark-ring" cx="36" cy="36" r="34"/>
+              <path class="holo-mark-bolt" d="M39.5 10 L20 40 H32.5 L29 62 L52 32 H38.5 L39.5 10 Z"/>
+            </svg>
+            <div class="holo-foot">
+              <div>Est. 2026<br><strong>Liberty, Missouri</strong></div>
+              <div>No. 001</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="shop" id="shop">
+    <div class="shop-head">
+      <h2>Early Release</h2>
+      <p>Grab it before it's gone — pay securely by card.</p>
+    </div>
+    <div class="product-card">
+      <div class="product-image"><img src="product-photo.jpg" alt="Pokémon TCG: Mega Evolution – Pitch Black Checklane Blister" style="width:100%;height:100%;object-fit:contain;border-radius:12px;"></div>
+      <div class="product-info">
+        <span class="tag">In Stock</span>
+        <h3>Mega Evolution: Pitch Black Checklane Blister</h3>
+        <div class="product-price">$7.99</div>
+        <p class="product-desc">Factory-sealed checklane blister — includes 1 Mega Evolution: Pitch Black booster pack plus a collector coin. Sourced through authorized wholesale distribution.</p>
+        <a class="btn-primary" href="https://buy.stripe.com/test_6oU8wP5KB8WYeGN13u83C00" target="_blank" rel="noopener">Buy now — card accepted</a>
+        <p class="other-pay-note">Prefer another way to pay (PayPal, etc.)? <a href="mailto:hello@pokeliberty.com">Contact us</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="highlights" id="highlights">
+    <div class="highlights-head">
+      <h2>What's coming next</h2>
+      <p>Three ways to get cards, before the storefront even opens.</p>
+    </div>
+    <div class="grid">
+      <div class="tile">
+        <span class="num">Fresh</span>
+        <h3>Latest release sealed product</h3>
+        <p>Booster packs, boxes, and mini-sets from the newest Pokémon TCG releases — sourced through official wholesale channels, not picked-over shelves.</p>
+      </div>
+      <div class="tile">
+        <span class="num">Curated</span>
+        <h3>Hand-picked singles</h3>
+        <p>Cards sorted and priced by hand, not scanned in bulk — every listing gets checked before it's offered.</p>
+      </div>
+      <div class="tile">
+        <span class="num">Grading-ready</span>
+        <h3>Pulls worth submitting</h3>
+        <p>Sourced with PSA submission in mind — clean pulls, careful handling, straight from sealed product.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>© 2026 Liberty TCG LLC</span>
+  <a href="mailto:hello@pokeliberty.com">hello@pokeliberty.com</a>
+</footer>
+
+</body>
+</html>
