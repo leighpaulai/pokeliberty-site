@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Cart — Poke Liberty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <a class="wordmark" href="/"><span class="dot"></span>POKE LIBERTY</a>
+  <div class="header-right">
+    <div class="locale">Liberty, MO</div>
+    <a class="cart-link" href="cart.html">Cart <span class="cart-badge" id="cart-badge" data-count="0"></span></a>
+  </div>
+</header>
+
+<main>
+  <section class="cart-section">
+    <h1>Your Cart</h1>
+    <p class="sub">Review your items below. Sales tax is calculated automatically at checkout based on your address.</p>
+
+    <div id="cart-empty" class="cart-empty" hidden>
+      Your cart is empty. <a href="index.html#shop">Browse what's available →</a>
+    </div>
+
+    <div id="cart-loaded" hidden>
+      <div class="cart-items" id="cart-items"></div>
+
+      <div class="donation-row">
+        <input type="checkbox" id="donation-checkbox">
+        <label for="donation-checkbox">
+          <span class="donation-title">🌱 Add $1 — Climate Support</span>
+          <span class="donation-sub">A small add-on to support local climate initiatives. Fully optional.</span>
+        </label>
+      </div>
+
+      <div class="cart-summary">
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span id="summary-subtotal">$0.00</span>
+        </div>
+        <div class="summary-row" id="summary-donation-row" hidden>
+          <span>Climate Support</span>
+          <span id="summary-donation">$1.00</span>
+        </div>
+        <div class="summary-row">
+          <span>Tax</span>
+          <span>Calculated at checkout</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total (before tax)</span>
+          <span id="summary-total">$0.00</span>
+        </div>
+      </div>
+
+      <div class="checkout-actions">
+        <button class="btn-primary" id="checkout-btn" type="button">Proceed to secure checkout</button>
+        <a class="btn-secondary" href="index.html#shop">Continue shopping</a>
+      </div>
+      <p class="checkout-error" id="checkout-error" hidden></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>© 2026 Liberty TCG LLC</span>
+  <a href="mailto:hello@pokeliberty.com">hello@pokeliberty.com</a>
+</footer>
+
+<script src="cart.js"></script>
+<script>
+  const fmt = (cents) => `$${(cents / 100).toFixed(2)}`;
+  const DONATION_CENTS = 100;
+
+  async function loadProducts() {
+    const res = await fetch('data/products.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Could not load product data');
+    return res.json();
+  }
+
+  function renderCartItem(product, productId, quantity) {
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    const lineTotal = product.unit_amount * quantity;
+    const imgHtml = product.image_filename
+      ? `<img src="images/${product.image_filename}" alt="${product.name}">`
+      : '';
+    div.innerHTML = `
+      <div class="cart-item-image">${imgHtml}</div>
+      <div class="cart-item-info">
+        <h3>${product.name}</h3>
+        <div class="cart-item-unit-price">${fmt(product.unit_amount)} each</div>
+        <div class="qty-stepper" data-qty-stepper>
+          <button type="button" data-qty-decrement aria-label="Decrease quantity">–</button>
+          <input type="number" value="${quantity}" min="1" max="${product.stock}" data-qty-input aria-label="Quantity">
+          <button type="button" data-qty-increment aria-label="Increase quantity">+</button>
+        </div>
+        ${quantity >= product.stock ? '<p class="cart-note">Max available in stock</p>' : ''}
+      </div>
+      <div class="cart-item-right">
+        <div class="cart-item-line-total">${fmt(lineTotal)}</div>
+        <button class="remove-link" type="button" data-remove>Remove</button>
+      </div>
+    `;
+
+    const stepper = div.querySelector('[data-qty-stepper]');
+    wireQtyStepper(stepper);
+    const input = stepper.querySelector('[data-qty-input]');
+    input.addEventListener('change', () => {
+      const val = Math.max(1, Math.min(product.stock, parseInt(input.value, 10) || 1));
+      setCartQuantity(productId, val);
+      renderCart();
+    });
+    div.querySelector('[data-remove]').addEventListener('click', () => {
+      removeFromCart(productId);
+      renderCart();
+    });
+
+    return div;
+  }
+
+  async function renderCart() {
+    const cart = getCart();
+    const ids = Object.keys(cart);
+    const emptyEl = document.getElementById('cart-empty');
+    const loadedEl = document.getElementById('cart-loaded');
+    const errorEl = document.getElementById('checkout-error');
+    errorEl.hidden = true;
+
+    if (ids.length === 0) {
+      emptyEl.hidden = false;
+      loadedEl.hidden = true;
+      return;
+    }
+
+    let products;
+    try {
+      products = await loadProducts();
+    } catch (e) {
+      errorEl.textContent = 'Could not load current product data — please refresh the page.';
+      errorEl.hidden = false;
+      return;
+    }
+
+    const itemsEl = document.getElementById('cart-items');
+    itemsEl.innerHTML = '';
+    let subtotal = 0;
+    let anyChanges = false;
+
+    for (const id of ids) {
+      const product = products[id];
+      if (!product || !product.active) {
+        // Product was removed or deactivated since it was added to the cart.
+        removeFromCart(id);
+        anyChanges = true;
+        continue;
+      }
+      let qty = cart[id];
+      if (qty > product.stock) {
+        qty = product.stock;
+        if (qty <= 0) {
+          removeFromCart(id);
+          anyChanges = true;
+          continue;
+        }
+        setCartQuantity(id, qty);
+        anyChanges = true;
+      }
+      subtotal += product.unit_amount * qty;
+      itemsEl.appendChild(renderCartItem(product, id, qty));
+    }
+
+    if (anyChanges) {
+      // A quantity or item changed due to stock re-validation — re-render once
+      // more against the corrected cart instead of showing stale totals.
+      return renderCart();
+    }
+
+    if (Object.keys(getCart()).length === 0) {
+      emptyEl.hidden = false;
+      loadedEl.hidden = true;
+      return;
+    }
+
+    emptyEl.hidden = true;
+    loadedEl.hidden = false;
+
+    const donation = getDonationPreference();
+    document.getElementById('donation-checkbox').checked = donation;
+    document.getElementById('summary-donation-row').hidden = !donation;
+
+    const total = subtotal + (donation ? DONATION_CENTS : 0);
+    document.getElementById('summary-subtotal').textContent = fmt(subtotal);
+    document.getElementById('summary-total').textContent = fmt(total);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateCartBadge();
+    renderCart();
+
+    document.getElementById('donation-checkbox').addEventListener('change', (e) => {
+      setDonationPreference(e.target.checked);
+      renderCart();
+    });
+
+    document.getElementById('checkout-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('checkout-btn');
+      const errorEl = document.getElementById('checkout-error');
+      errorEl.hidden = true;
+      btn.disabled = true;
+      btn.textContent = 'Redirecting to checkout…';
+
+      const cart = getCart();
+      const items = Object.entries(cart).map(([id, quantity]) => ({ id, quantity }));
+
+      try {
+        const res = await fetch('/.netlify/functions/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, donation: getDonationPreference() }),
+        });
+
+        let data;
+        try {
+          data = await res.json();
+        } catch {
+          throw new Error('Checkout is temporarily unavailable — please try again shortly.');
+        }
+        if (!res.ok) {
+          throw new Error(data.error || 'Something went wrong creating your checkout session.');
+        }
+        window.location = data.url;
+      } catch (e) {
+        // Re-sync the displayed cart first (e.g. a stock conflict may have
+        // changed quantities), THEN show the error — renderCart() clears
+        // errorEl.hidden at its top, so setting the message after avoids
+        // it being immediately hidden again.
+        await renderCart();
+        btn.disabled = false;
+        btn.textContent = 'Proceed to secure checkout';
+        errorEl.textContent = e.message;
+        errorEl.hidden = false;
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
