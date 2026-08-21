@@ -10,14 +10,14 @@
     "active": true,
     "shipping_tier": "small"
   },
-  "Pikachu Mega Dreams EX": {
-    "id": "Pikachu Mega Dreams EX",
-    "category": "Raw cards for Grading",
-    "name": "Pikachu Mega Dreams EX",
-    "description": "Pikachu flawless NM card",
-    "unit_amount": 18000,
+  "Pauls_Card": {
+    "id": "Pauls_Card",
+    "category": "Sealed Product",
+    "name": "Paul Test Card",
+    "description": "description",
+    "unit_amount": 20000,
     "stock": 1,
-    "image_filename": "Pikachu-Mega-Dreams-EX.jpg",
+    "image_filename": "",
     "active": true,
     "shipping_tier": "small"
   }
