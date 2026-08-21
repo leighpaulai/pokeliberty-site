@@ -24,6 +24,9 @@
   <section class="success-section">
     <h1>Thanks for your order! 🎉</h1>
     <p>We've got it and will be in touch by email about pickup or shipping shortly. Reach out anytime at <a href="mailto:hello@pokeliberty.com" style="color: var(--gold-bright);">hello@pokeliberty.com</a> if you have questions.</p>
+
+    <div class="order-summary" id="order-summary" hidden></div>
+
     <a class="btn-primary" href="index.html">Back to Poke Liberty</a>
   </section>
 </main>
@@ -35,8 +38,56 @@
 
 <script src="cart.js"></script>
 <script>
+  const fmt = (cents) => `$${(cents / 100).toFixed(2)}`;
+
   // Order is complete — clear the local cart so it doesn't linger for next visit.
   clearCart();
+
+  // Best-effort order summary: if there's no session_id (e.g. someone just
+  // navigates here directly) or the lookup fails, the page still works fine
+  // with just the generic thank-you copy above — this only adds detail when
+  // it's actually available.
+  async function renderOrderSummary() {
+    const sessionId = new URLSearchParams(window.location.search).get('session_id');
+    if (!sessionId) return;
+
+    const summaryEl = document.getElementById('order-summary');
+    try {
+      const res = await fetch(`/.netlify/functions/get-order-details?session_id=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return;
+      const order = await res.json();
+
+      const itemsHtml = (order.items || [])
+        .map((item) => `
+          <div class="order-summary-row">
+            <span>${item.quantity} × ${item.name}</span>
+            <span>${fmt(item.amount)}</span>
+          </div>
+        `)
+        .join('');
+
+      const shippingHtml = order.shippingMethodName
+        ? `<div class="order-summary-row"><span>Shipping</span><span>${order.shippingMethodName}${order.shippingAmount ? ' — ' + fmt(order.shippingAmount) : ' — FREE'}</span></div>`
+        : '';
+
+      const pickupHtml = order.pickupNote
+        ? `<p class="order-summary-note">Preferred pickup time: ${order.pickupNote}</p>`
+        : '';
+
+      summaryEl.innerHTML = `
+        <h2 class="order-summary-title">Order summary</h2>
+        ${itemsHtml}
+        ${shippingHtml}
+        <div class="order-summary-row order-summary-total"><span>Total paid</span><span>${fmt(order.amountTotal)}</span></div>
+        ${pickupHtml}
+      `;
+      summaryEl.hidden = false;
+    } catch {
+      // fail soft — generic thank-you copy above still stands on its own
+    }
+  }
+
+  renderOrderSummary();
 </script>
 
 </body>

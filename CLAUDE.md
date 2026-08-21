@@ -14,10 +14,11 @@ This file is read automatically by Claude Code at the start of every session.
 - Fonts: Fraunces (headlines), Space Grotesk (body)
 
 ## Tech stack
-- Static site (`index.html`, `cart.html`, `success.html`, `styles.css`, `cart.js`, `signup.js`) deployed on Netlify (`netlify.toml`: publish `.`, functions `netlify/functions`, bundled with esbuild)
-- Backend logic lives entirely in Netlify Functions (`netlify/functions/`): `create-checkout-session.js`, `webhook.js`, `shipping.js`, `subscribe.js`
+- Static site (`index.html`, `shop.html`, `product.html`, `cart.html`, `success.html`, `styles.css`, `cart.js`, `signup.js`) deployed on Netlify (`netlify.toml`: publish `.`, functions `netlify/functions`, bundled with esbuild)
+- Backend logic lives entirely in Netlify Functions (`netlify/functions/`): `create-checkout-session.js`, `webhook.js`, `shipping.js`, `shipping-estimate.js`, `get-order-details.js`, `subscribe.js`
 - Dependencies (`package.json`): `stripe` (^17), `google-auth-library` (^9) — no frontend framework/bundler, plain JS/DOM
-- Inventory pipeline: `scripts/build_products.py` (Python, see `scripts/requirements.txt`) reads a Google Sheet ("Poke Liberty Product Inventory") and regenerates `netlify/functions/products-data.json` (server-side, trusted) and `data/products.json` (client-side, for display/cart rendering). Runs on a schedule via GitHub Actions (`.github/`) roughly every 30 min, or can be triggered manually — see recent "Sync inventory from Google Sheet [automated]" commits
+- Inventory pipeline: `scripts/build_products.py` (Python, see `scripts/requirements.txt`) reads a Google Sheet ("Poke Liberty Product Inventory") and regenerates the full product grid in `shop.html`, the Featured strip in `index.html`, `netlify/functions/products-data.json` (server-side, trusted), and `data/products.json` (client-side, for display/cart rendering). Runs on a schedule via GitHub Actions (`.github/`) roughly every 30 min, or can be triggered manually — see recent "Sync inventory from Google Sheet [automated]" commits
+- Sheet columns: `id, category, name, description, price, stock, image_filename, active, shipping_tier, condition, featured` — `condition` (e.g. "Near Mint") and `featured` (TRUE/FALSE, controls the homepage strip) are both optional
 - Cart state is client-side only, stored in `localStorage` (`cart.js`, key `pokeliberty_cart`) — a convenience layer never trusted for pricing/stock
 
 ## Stripe integration (cart.js / create-checkout-session.js / webhook.js / success.html)
@@ -29,6 +30,18 @@ This file is read automatically by Claude Code at the start of every session.
 
 ## Checkout flow status
 End-to-end flow appears implemented and functionally wired together, not a stub:
-- Add to cart → cart.html (live re-validation of price/stock/active against `data/products.json`, quantity clamping, free-shipping progress banner, optional $1 donation, optional "create account" signup capture) → Stripe Checkout Session (server-validated pricing/stock, tax, shipping options, address collection) → success.html (clears cart) → webhook decrements Sheet stock → next scheduled `build_products.py` run reflects the new stock on the storefront.
-- Known accepted gaps (called out directly in code comments, not silently missing): webhook is not idempotent/race-free; stock sync has up-to-~30-min lag after a sale; shipping carrier rates in `shipping.js` are estimates flagged as "confirm against real weighed packages before going live"; success.html doesn't verify the session or show order contents.
+- Browse (`index.html` Featured strip or `shop.html` full catalog with category tabs/search/sort/stock filter) → product.html (image, price, stock/urgency badge, condition badge when set, description, shipping-tier note) → Add to cart → cart.html (live re-validation of price/stock/active against `data/products.json`, quantity clamping, free-shipping progress banner, real Ground/Priority shipping-cost preview via `shipping-estimate.js`, optional $1 donation, optional "create account" signup capture) → Stripe Checkout Session (server-validated pricing/stock, tax, shipping options, address collection) → success.html (clears cart, shows a real order summary — items, total, shipping method, pickup note — via `get-order-details.js`) → webhook decrements Sheet stock → next scheduled `build_products.py` run reflects the new stock on the storefront.
+- Known accepted gaps (called out directly in code comments, not silently missing): webhook is not idempotent/race-free; stock sync has up-to-~30-min lag after a sale; shipping carrier rates in `shipping.js` are estimates flagged as "confirm against real weighed packages before going live".
 - No automated test suite in the repo — verify checkout changes manually (e.g. Stripe test mode) before shipping.
+
+## Current status
+As of the Aug 2026 checkout/browsing UX overhaul:
+- **Browsing journey** is homepage (marketing + manually-curated Featured strip) → `shop.html` (full catalog: category tabs, search, stock filter, sort) → `product.html` (per-item detail page) → `cart.html` → Stripe Checkout → `success.html`. Previously the homepage held the entire catalog inline with no per-product page.
+- **Cart page** now previews real shipping costs (Ground/Priority/Local Pickup) before handoff to Stripe, via a new `shipping-estimate.js` function — previously it only said "Calculated at checkout" for both tax and shipping.
+- **Order confirmation** now shows an actual order summary (items, total paid, shipping method, pickup note) via a new `get-order-details.js` function reading the completed Stripe Checkout Session — previously it was generic thank-you copy only.
+- **Product schema** gained optional `condition` and `featured` Sheet columns (see Tech stack above); both are no-ops for existing sealed-product rows until filled in.
+- See `shipping-spec.md` for the full shipping pricing/tier spec (written from `shipping.js`, which stays the source of truth).
+- Not yet done / open for later: no automated tests exist for any of this — the plan above was verified by code review only, not a live Stripe test-mode run; confirm that manually before relying on it in production.
+
+## Session log
+- **2026-08-20** — Checkout + browsing UX overhaul. Researched checkout patterns (Shopify/Baymard/TCGplayer) and TCG browsing patterns (TCGplayer, Troll and Toad); split the homepage into marketing + Featured strip with a new dedicated `shop.html` (categories/search/sort/filter) and `product.html` (detail page); added a cart-page shipping-cost preview and a real order-confirmation summary; added optional `condition`/`featured` product fields; wrote `shipping-spec.md`. No shipping pricing formula changed — only the Local Pickup label wording. See git log for the full commit.

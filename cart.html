@@ -27,12 +27,14 @@
     <p class="sub">Review your items below. Sales tax is calculated automatically at checkout based on your address.</p>
 
     <div id="cart-empty" class="cart-empty" hidden>
-      Your cart is empty. <a href="index.html#shop">Browse what's available →</a>
+      Your cart is empty. <a href="shop.html">Browse what's available →</a>
     </div>
 
     <div id="cart-loaded" hidden>
       <p class="free-shipping-banner" id="free-shipping-banner" hidden></p>
       <div class="cart-items" id="cart-items"></div>
+
+      <div class="shipping-preview" id="shipping-preview" hidden></div>
 
       <div class="donation-row">
         <input type="checkbox" id="donation-checkbox">
@@ -82,7 +84,7 @@
 
       <div class="checkout-actions">
         <button class="btn-primary" id="checkout-btn" type="button">Proceed to secure checkout</button>
-        <a class="btn-secondary" href="index.html#shop">Continue shopping</a>
+        <a class="btn-secondary" href="shop.html">Continue shopping</a>
       </div>
       <p class="checkout-error" id="checkout-error" hidden></p>
     </div>
@@ -174,6 +176,7 @@
     itemsEl.innerHTML = '';
     let subtotal = 0;
     let anyChanges = false;
+    const validItems = [];
 
     for (const id of ids) {
       const product = products[id];
@@ -195,6 +198,7 @@
         anyChanges = true;
       }
       subtotal += product.unit_amount * qty;
+      validItems.push({ id, quantity: qty });
       itemsEl.appendChild(renderCartItem(product, id, qty));
     }
 
@@ -233,6 +237,8 @@
       shippingBanner.classList.remove('unlocked');
     }
     shippingBanner.hidden = false;
+
+    renderShippingPreview(document.getElementById('shipping-preview'), validItems);
   }
 
   document.addEventListener('DOMContentLoaded', () => {

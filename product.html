@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product — Poke Liberty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="bg-glow"></div>
+
+<header>
+  <a class="wordmark" href="/"><span class="dot"></span>POKE LIBERTY</a>
+  <div class="header-right">
+    <div class="locale">Liberty, MO</div>
+    <a class="cart-link" href="cart.html">Cart <span class="cart-badge" id="cart-badge" data-count="0"></span></a>
+  </div>
+</header>
+
+<main>
+  <section class="product-detail-section">
+    <p class="breadcrumb" id="breadcrumb"><a href="shop.html">Shop</a></p>
+
+    <div id="product-not-found" class="cart-empty" hidden>
+      That product isn't available anymore. <a href="shop.html">Back to the shop →</a>
+    </div>
+
+    <div id="product-detail" hidden></div>
+  </section>
+</main>
+
+<footer>
+  <span>© 2026 Liberty TCG LLC</span>
+  <a href="mailto:hello@pokeliberty.com">hello@pokeliberty.com</a>
+</footer>
+
+<script src="cart.js"></script>
+<script>
+  const fmt = (cents) => `$${(cents / 100).toFixed(2)}`;
+
+  const TIER_NOTE = {
+    small: 'Ships in a small package — single cards, slabs, small packs.',
+    medium: 'Ships in a standard package — multiple packs or small bundles.',
+    large: 'Ships in a larger box — booster boxes, ETBs, poster collections.',
+  };
+
+  function stockTag(stock) {
+    if (stock <= 0) return { text: 'Sold Out', cls: 'sold-out' };
+    if (stock <= 2) return { text: `Only ${stock} left!`, cls: 'low-stock' };
+    return { text: 'In Stock', cls: '' };
+  }
+
+  async function loadProducts() {
+    const res = await fetch('data/products.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Could not load product data');
+    return res.json();
+  }
+
+  function renderProduct(product, id) {
+    const detailEl = document.getElementById('product-detail');
+    const breadcrumbEl = document.getElementById('breadcrumb');
+    breadcrumbEl.innerHTML = `<a href="shop.html">Shop</a> / <a href="shop.html">${product.category}</a> / ${product.name}`;
+    document.title = `${product.name} — Poke Liberty`;
+
+    const { text: tagText, cls: tagCls } = stockTag(product.stock);
+    const conditionHtml = product.condition
+      ? `<span class="condition-badge">${product.condition}</span>` : '';
+    const imgHtml = product.image_filename
+      ? `<img src="images/${product.image_filename}" alt="${product.name}">`
+      : '<span>[ NO PHOTO SET ]</span>';
+    const tierNote = TIER_NOTE[product.shipping_tier] || '';
+
+    const buyRowHtml = product.stock > 0 ? `
+      <div class="buy-row">
+        <div class="qty-stepper" data-qty-stepper>
+          <button type="button" data-qty-decrement aria-label="Decrease quantity">–</button>
+          <input type="number" value="1" min="1" max="${product.stock}" data-qty-input aria-label="Quantity">
+          <button type="button" data-qty-increment aria-label="Increase quantity">+</button>
+        </div>
+        <button class="btn-primary" type="button" id="add-to-cart-btn">Add to cart</button>
+      </div>
+      <p class="stock-note">${product.stock} in stock</p>
+    ` : `<button class="btn-primary" type="button" disabled aria-disabled="true">Sold out</button>`;
+
+    detailEl.innerHTML = `
+      <div class="product-detail-grid">
+        <div class="product-detail-image">${imgHtml}</div>
+        <div class="product-detail-info">
+          <span class="tag ${tagCls}">${tagText}</span>
+          ${conditionHtml}
+          <h1>${product.name}</h1>
+          <div class="product-price">${fmt(product.unit_amount)}</div>
+          <p class="product-detail-desc">${product.description || ''}</p>
+          ${buyRowHtml}
+          ${tierNote ? `<p class="shipping-tier-note">${tierNote}</p>` : ''}
+        </div>
+      </div>
+    `;
+    detailEl.hidden = false;
+
+    const stepper = detailEl.querySelector('[data-qty-stepper]');
+    if (stepper) wireQtyStepper(stepper);
+
+    const addBtn = document.getElementById('add-to-cart-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const input = detailEl.querySelector('[data-qty-input]');
+        const qty = Math.max(1, parseInt(input.value, 10) || 1);
+        addToCart(id, qty);
+        const original = addBtn.textContent;
+        addBtn.textContent = 'Added ✓';
+        setTimeout(() => { addBtn.textContent = original; }, 1200);
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    updateCartBadge();
+    const id = new URLSearchParams(window.location.search).get('id');
+    const notFoundEl = document.getElementById('product-not-found');
+
+    if (!id) {
+      notFoundEl.hidden = false;
+      return;
+    }
+
+    try {
+      const products = await loadProducts();
+      const product = products[id];
+      if (!product || !product.active) {
+        notFoundEl.hidden = false;
+        return;
+      }
+      renderProduct(product, id);
+    } catch {
+      notFoundEl.textContent = 'Could not load product data — please refresh the page.';
+      notFoundEl.hidden = false;
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -104,20 +104,27 @@ function wireQtyStepper(stepper) {
   clamp();
 }
 
-/** Wires client-side search + in-stock/out-of-stock filtering over the
- * already-rendered product cards (no server round-trip — everything's
- * already in the DOM). Hides a whole category-group when nothing in it
- * matches, and shows a "no results" message when nothing matches at all. */
-function wireProductSearch(searchInput, stockFilter, shopSection) {
-  if (!searchInput || !shopSection) return;
-  const noResultsEl = document.getElementById('no-results-message');
+/** Wires shop.html's category tabs + search + in-stock/out-of-stock filter
+ * together over the already-rendered product grid (no server round-trip —
+ * everything's already in the DOM). A card must match the active category,
+ * search text, AND stock filter to show; a whole category-group hides when
+ * nothing in it matches (or when a specific tab doesn't apply to it). Tab
+ * buttons are built from each .category-group's data-category attribute,
+ * so the tab bar always matches whatever categories the Sheet produced —
+ * nothing here is hand-maintained per category name. */
+function wireShopFilters({ shopSection, searchInput, stockFilter, categoryTabs, noResultsEl }) {
+  if (!shopSection) return;
+  const groups = [...shopSection.querySelectorAll('.category-group')];
+  const categories = [...new Set(groups.map((g) => g.dataset.category))];
+  let activeCategory = 'all';
 
   function applyFilter() {
-    const query = searchInput.value.trim().toLowerCase();
+    const query = (searchInput?.value || '').trim().toLowerCase();
     const stockValue = stockFilter ? stockFilter.value : 'all';
     let totalVisible = 0;
 
-    shopSection.querySelectorAll('.category-group').forEach((group) => {
+    groups.forEach((group) => {
+      const groupMatchesCategory = activeCategory === 'all' || group.dataset.category === activeCategory;
       let groupVisible = 0;
       group.querySelectorAll('.product-card').forEach((card) => {
         const name = card.dataset.searchName || '';
@@ -127,7 +134,7 @@ function wireProductSearch(searchInput, stockFilter, shopSection) {
           stockValue === 'all' ||
           (stockValue === 'in' && inStock) ||
           (stockValue === 'out' && !inStock);
-        const visible = matchesQuery && matchesStock;
+        const visible = groupMatchesCategory && matchesQuery && matchesStock;
         card.hidden = !visible;
         if (visible) groupVisible++;
       });
@@ -138,8 +145,48 @@ function wireProductSearch(searchInput, stockFilter, shopSection) {
     if (noResultsEl) noResultsEl.hidden = totalVisible > 0;
   }
 
-  searchInput.addEventListener('input', applyFilter);
+  if (categoryTabs) {
+    const makeTab = (label, value) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'category-tab' + (value === 'all' ? ' active' : '');
+      btn.textContent = label;
+      btn.dataset.category = value;
+      btn.addEventListener('click', () => {
+        activeCategory = value;
+        categoryTabs.querySelectorAll('.category-tab').forEach((b) => b.classList.toggle('active', b === btn));
+        applyFilter();
+      });
+      return btn;
+    };
+    categoryTabs.appendChild(makeTab('All', 'all'));
+    categories.forEach((cat) => categoryTabs.appendChild(makeTab(cat, cat)));
+  }
+
+  if (searchInput) searchInput.addEventListener('input', applyFilter);
   if (stockFilter) stockFilter.addEventListener('change', applyFilter);
+  applyFilter();
+}
+
+/** Sorts product-cards within each category-group by price or name, using
+ * the numeric data-price (cents) / data-search-name attributes set on each
+ * card — group membership and visibility stay under wireShopFilters, this
+ * only reorders what's already showing. Leaving the select on its default
+ * value keeps the Sheet-driven (i.e. "featured first") order untouched. */
+function wireProductSort(sortSelect, shopSection) {
+  if (!sortSelect || !shopSection) return;
+  const comparators = {
+    'price-asc': (a, b) => Number(a.dataset.price) - Number(b.dataset.price),
+    'price-desc': (a, b) => Number(b.dataset.price) - Number(a.dataset.price),
+    'name-asc': (a, b) => (a.dataset.searchName || '').localeCompare(b.dataset.searchName || ''),
+  };
+  sortSelect.addEventListener('change', () => {
+    const comparator = comparators[sortSelect.value];
+    if (!comparator) return;
+    shopSection.querySelectorAll('.category-group').forEach((group) => {
+      [...group.querySelectorAll('.product-card')].sort(comparator).forEach((card) => group.appendChild(card));
+    });
+  });
 }
 
 async function fetchProductsData() {
@@ -163,6 +210,39 @@ async function getCartSubtotalCents() {
     }
   }
   return subtotal;
+}
+
+/** Fills a container with a preview of the three checkout shipping options
+ * (Ground / Priority / Local Pickup) and their real prices, computed
+ * server-side by the shipping-estimate function from the same formula
+ * create-checkout-session.js uses — never duplicated client-side, since
+ * getting this preview wrong would just train shoppers to distrust it.
+ * Fails soft (hides itself) rather than block cart review over a preview. */
+async function renderShippingPreview(containerEl, items) {
+  if (!containerEl) return;
+  if (!items.length) {
+    containerEl.hidden = true;
+    return;
+  }
+  try {
+    const res = await fetch('/.netlify/functions/shipping-estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) throw new Error('Shipping estimate failed');
+    const { ground, priority, free } = await res.json();
+    containerEl.innerHTML = `
+      <h3 class="shipping-preview-title">Shipping options at checkout</h3>
+      <div class="shipping-option-row"><span>Ground Shipping <em>(2–5 business days)</em></span><span>${free ? 'FREE' : fmt(ground)}</span></div>
+      <div class="shipping-option-row"><span>Priority Shipping <em>(1–3 business days)</em></span><span>${free ? 'FREE' : fmt(priority)}</span></div>
+      <div class="shipping-option-row"><span>Local Pickup <em>(Kansas City area)</em></span><span>FREE</span></div>
+      <p class="shipping-preview-note">You'll pick one of these at secure checkout — prices shown are estimates; the final amount is confirmed by Stripe based on your address.</p>
+    `;
+    containerEl.hidden = false;
+  } catch {
+    containerEl.hidden = true;
+  }
 }
 
 /** Fills a container with "Add $X more for free shipping!" (or an

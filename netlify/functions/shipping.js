@@ -101,7 +101,10 @@ function buildShippingOptions(subtotalCents, shippingTiers) {
       shipping_rate_data: {
         type: 'fixed_amount',
         fixed_amount: { amount: 0, currency: 'usd' },
-        display_name: 'Local Pickup (Kansas City area)',
+        // Explicitly says "Free" rather than relying on the $0 amount alone
+        // to communicate it — shoppers scanning three options shouldn't
+        // have to infer that pickup is the free one.
+        display_name: 'Local Pickup — Free (Kansas City area)',
       },
     },
   ];

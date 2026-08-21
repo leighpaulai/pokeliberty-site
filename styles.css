@@ -371,6 +371,17 @@ h1 em {
   text-align: center;
   padding: 16px;
   overflow: hidden;
+  text-decoration: none;
+}
+
+.product-info h3 a,
+.featured-info h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+.product-info h3 a:hover,
+.featured-info h3 a:hover {
+  color: var(--gold-bright);
 }
 
 .product-info .tag {
@@ -381,6 +392,62 @@ h1 em {
   display: block;
   margin-bottom: 10px;
 }
+
+/* General .tag rule — the product-info-scoped one above still applies on
+ * the shop grid; this covers the same badge used on featured cards and the
+ * product detail page, plus the low-stock/sold-out urgency variants shared
+ * by all three. */
+.tag {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--gold);
+  font-size: 13px;
+  display: block;
+  margin-bottom: 10px;
+}
+.tag.low-stock { color: var(--red); }
+.tag.sold-out { color: var(--slate); }
+
+.condition-badge {
+  display: inline-block;
+  background: rgba(124,135,156,0.15);
+  border: 1px solid rgba(124,135,156,0.4);
+  color: var(--slate);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.category-tab {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,162,75,0.3);
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: var(--slate);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.category-tab:hover { border-color: var(--gold-bright); color: var(--parchment); }
+.category-tab.active {
+  background: rgba(201,162,75,0.18);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+.category-tab:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 
 .product-info h3 {
   font-family: 'Fraunces', serif;
@@ -452,6 +519,52 @@ h1 em {
 .stock-note {
   font-size: 12.5px;
   color: var(--slate);
+}
+
+/* ---- Featured strip (homepage) ---- */
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.featured-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+  border: 1px solid rgba(201,162,75,0.3);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.featured-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1a2233 0%, #0c1220 60%);
+  border: 1px solid rgba(201,162,75,0.4);
+  overflow: hidden;
+  margin-bottom: 16px;
+  color: var(--slate);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 12px;
+  text-decoration: none;
+}
+
+.featured-info h3 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.featured-info .btn-secondary {
+  margin-top: 4px;
+  font-size: 13px;
+  padding: 10px 18px;
 }
 
 .other-pay-note {
@@ -985,6 +1098,41 @@ footer a:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 
   margin-top: 12px;
 }
 
+/* ---- Shipping preview (cart page) ---- */
+.shipping-preview {
+  border: 1px solid rgba(201,162,75,0.3);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+}
+
+.shipping-preview-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.shipping-option-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(124,135,156,0.15);
+}
+.shipping-option-row:last-of-type { border-bottom: none; }
+.shipping-option-row em {
+  color: var(--slate);
+  font-style: normal;
+  font-size: 12.5px;
+}
+
+.shipping-preview-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--slate);
+}
+
 /* ---- Success page ---- */
 .success-section {
   max-width: 640px;
@@ -1003,4 +1151,106 @@ footer a:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 
   font-size: 15px;
   line-height: 1.6;
   margin-bottom: 28px;
+}
+
+.order-summary {
+  text-align: left;
+  border: 1px solid rgba(201,162,75,0.3);
+  border-radius: 16px;
+  padding: 24px 26px;
+  margin: 0 auto 32px;
+  max-width: 480px;
+}
+
+.order-summary-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.order-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14.5px;
+  color: var(--slate);
+  padding: 6px 0;
+}
+
+.order-summary-total {
+  color: var(--parchment);
+  font-weight: 600;
+  font-size: 17px;
+  border-top: 1px solid rgba(124,135,156,0.25);
+  margin-top: 8px;
+  padding-top: 12px;
+}
+.order-summary-total span:last-child { color: var(--gold-bright); }
+
+.order-summary-note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--slate);
+}
+
+/* ---- Product detail page ---- */
+.product-detail-section {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: clamp(30px, 6vh, 60px) clamp(24px, 6vw, 72px) clamp(60px, 8vh, 100px);
+}
+
+.breadcrumb {
+  font-size: 13px;
+  color: var(--slate);
+  margin-bottom: 28px;
+}
+.breadcrumb a { color: var(--slate); text-decoration: underline; text-underline-offset: 3px; }
+.breadcrumb a:hover { color: var(--gold-bright); }
+
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.product-detail-image {
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1a2233 0%, #0c1220 60%);
+  border: 1px solid rgba(201,162,75,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--slate);
+  overflow: hidden;
+}
+.product-detail-image img { width: 100%; height: 100%; object-fit: contain; }
+
+.product-detail-info h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: clamp(28px, 3.4vw, 40px);
+  margin: 4px 0 12px;
+}
+
+.product-detail-desc {
+  color: var(--slate);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 55ch;
+}
+
+.shipping-tier-note {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--slate);
+  border-top: 1px solid rgba(124,135,156,0.2);
+  padding-top: 14px;
+}
+
+@media (max-width: 720px) {
+  .product-detail-grid { grid-template-columns: 1fr; }
 }
